@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, PALETTE } from '../config.js';
 import { HighScoreManager } from '../systems/ScoreManager.js';
 import AudioManager from '../systems/AudioManager.js';
+import { bindMenuKeys, pollMenuKeys } from '../utils/menuKeyboard.js';
+import { focusGameCanvas, setupKeyboardCapture } from '../utils/keyboardSetup.js';
 
 export default class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -53,12 +55,7 @@ export default class GameOverScene extends Phaser.Scene {
       padding: { x: 16, y: 8 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    retryBtn.on('pointerdown', () => {
-      this.scene.start('GameScene', {
-        levelIndex: this.levelIndex,
-        score: this.score,
-      });
-    });
+    retryBtn.on('pointerdown', () => this.retry());
 
     const quitBtn = this.add.text(GAME_WIDTH / 2, 370, '  QUIT  ', {
       fontFamily: 'monospace',
@@ -68,8 +65,38 @@ export default class GameOverScene extends Phaser.Scene {
       padding: { x: 12, y: 6 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    quitBtn.on('pointerdown', () => {
-      this.scene.start('MenuScene');
+    quitBtn.on('pointerdown', () => this.quit());
+
+    bindMenuKeys(this, {
+      confirm: () => this.retry(),
+      cancel: () => this.quit(),
     });
+    setupKeyboardCapture(this);
+    focusGameCanvas(this);
+
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 24, 'Enter = try again   Esc = quit', {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      color: '#78909c',
+    }).setOrigin(0.5);
+  }
+
+  retry() {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.scene.start('GameScene', {
+      levelIndex: this.levelIndex,
+      score: this.score,
+    });
+  }
+
+  quit() {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.scene.start('MenuScene');
+  }
+
+  update() {
+    pollMenuKeys(this);
   }
 }

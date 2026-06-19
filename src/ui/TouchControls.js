@@ -2,9 +2,8 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config.js';
 
 export default class TouchControls {
-  constructor(scene, onChange) {
+  constructor(scene) {
     this.scene = scene;
-    this.onChange = onChange;
     this.state = { left: false, right: false, jump: false, freeze: false };
 
     const btnSize = 64;
@@ -18,22 +17,20 @@ export default class TouchControls {
   }
 
   createButton(texture, x, y, label, key) {
-    const btn = this.scene.add.image(x, y, texture).setDepth(100).setInteractive();
+    const btn = this.scene.add.image(x, y, texture).setDepth(100).setScrollFactor(0).setInteractive();
     btn.setDisplaySize(64, 64);
 
     const text = this.scene.add.text(x, y, label, {
       fontFamily: 'monospace',
       fontSize: key === 'jump' ? '14px' : '22px',
       color: '#ffffff',
-    }).setOrigin(0.5).setDepth(101);
+    }).setOrigin(0.5).setDepth(101).setScrollFactor(0);
 
     const press = () => {
       this.state[key] = true;
-      this.onChange({ ...this.state });
     };
     const release = () => {
       this.state[key] = false;
-      this.onChange({ ...this.state });
     };
 
     btn.on('pointerdown', press);

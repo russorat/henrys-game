@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, PALETTE } from '../config.js';
 import { HighScoreManager } from '../systems/ScoreManager.js';
 import AudioManager from '../systems/AudioManager.js';
+import { bindMenuKeys, pollMenuKeys } from '../utils/menuKeyboard.js';
+import { focusGameCanvas, setupKeyboardCapture } from '../utils/keyboardSetup.js';
 
 export default class MenuScene extends Phaser.Scene {
   constructor() {
@@ -68,10 +70,11 @@ export default class MenuScene extends Phaser.Scene {
       padding: { x: 20, y: 10 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    playBtn.on('pointerdown', () => {
-      audio.stopMusic();
-      this.scene.start('GameScene', { levelIndex: 0, score: 0, newGame: true });
-    });
+    playBtn.on('pointerdown', () => this.startGame());
+
+    bindMenuKeys(this, { confirm: () => this.startGame() });
+    setupKeyboardCapture(this);
+    focusGameCanvas(this);
 
     const muteLabel = audio.isMuted() ? '🔇 UNMUTE' : '🔊 MUTE';
     const muteBtn = this.add.text(GAME_WIDTH / 2, 330, muteLabel, {
@@ -86,10 +89,21 @@ export default class MenuScene extends Phaser.Scene {
       if (!muted) audio.playMusic('music-menu', 0.4);
     });
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, 'Freeze animals, then run into them!', {
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, 'Freeze animals, then run into them!  |  Enter to play', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#455a64',
     }).setOrigin(0.5);
+  }
+
+  startGame() {
+    if (this.starting) return;
+    this.starting = true;
+    AudioManager.get()?.stopMusic();
+    this.scene.start('GameScene', { levelIndex: 0, score: 0, newGame: true });
+  }
+
+  update() {
+    pollMenuKeys(this);
   }
 }

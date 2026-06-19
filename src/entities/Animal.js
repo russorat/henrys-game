@@ -11,10 +11,12 @@ const STATE = {
 export default class Animal extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, config, levelTelegraph) {
     const animalConfig = ANIMAL_CONFIG[config.size];
-    super(scene, config.x * TILE_SIZE + TILE_SIZE / 2, config.y * TILE_SIZE - animalConfig.height / 2, animalConfig.key);
+    const x = config.x * TILE_SIZE + TILE_SIZE / 2;
+    const y = config.y * TILE_SIZE;
+    super(scene, x, y, animalConfig.key);
 
-    scene.add.existing(this);
-    scene.physics.add.existing(this);
+    this.setOrigin(0.5, 1);
+    this.setScale(2);
 
     this.size = config.size;
     this.animalConfig = animalConfig;
@@ -29,8 +31,8 @@ export default class Animal extends Phaser.Physics.Arcade.Sprite {
     this.body.setImmovable(true);
     this.body.setSize(animalConfig.width, animalConfig.height);
     this.body.setOffset(
-      (this.width - animalConfig.width) / 2,
-      this.height - animalConfig.height
+      (this.displayWidth - animalConfig.width) / 2,
+      this.displayHeight - animalConfig.height
     );
     this.setDepth(5);
 

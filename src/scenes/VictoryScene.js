@@ -3,6 +3,8 @@ import { GAME_WIDTH, GAME_HEIGHT, PALETTE } from '../config.js';
 import { HighScoreManager } from '../systems/ScoreManager.js';
 import AudioManager from '../systems/AudioManager.js';
 import { launchFireworks } from '../ui/Fireworks.js';
+import { bindMenuKeys, pollMenuKeys } from '../utils/menuKeyboard.js';
+import { focusGameCanvas, setupKeyboardCapture } from '../utils/keyboardSetup.js';
 
 export default class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -65,8 +67,26 @@ export default class VictoryScene extends Phaser.Scene {
       padding: { x: 16, y: 8 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    menuBtn.on('pointerdown', () => {
-      this.scene.start('MenuScene');
-    });
+    menuBtn.on('pointerdown', () => this.goToMenu());
+
+    bindMenuKeys(this, { confirm: () => this.goToMenu() });
+    setupKeyboardCapture(this);
+    focusGameCanvas(this);
+
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 24, 'Enter = back to menu', {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      color: '#78909c',
+    }).setOrigin(0.5);
+  }
+
+  goToMenu() {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.scene.start('MenuScene');
+  }
+
+  update() {
+    pollMenuKeys(this);
   }
 }

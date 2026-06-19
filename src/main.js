@@ -24,6 +24,18 @@ const config = {
       debug: false,
     },
   },
+  input: {
+    keyboard: true,
+  },
+  callbacks: {
+    postBoot: (game) => {
+      const canvas = game.canvas;
+      if (canvas) {
+        canvas.setAttribute('tabindex', '1');
+        canvas.style.outline = 'none';
+      }
+    },
+  },
   scene: [BootScene, MenuScene, GameScene, LevelCompleteScene, GameOverScene, VictoryScene],
 };
 
