@@ -201,6 +201,42 @@ export function createPlatformTextures(scene) {
   scene.textures.addCanvas('platform', canvas);
 }
 
+export function createFinishFlagTexture(scene) {
+  const w = 16;
+  const h = 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  const pole = colorHex(PALETTE.henryHat);
+  const gold = colorHex(PALETTE.gold);
+  const green = colorHex(PALETTE.grass);
+  const white = colorHex(PALETTE.white);
+
+  // Pole
+  for (let y = 6; y < h; y++) {
+    setPixel(ctx, 3, y, pole);
+    setPixel(ctx, 4, y, pole);
+  }
+
+  // Flag — gold and green checker
+  for (let y = 2; y < 14; y++) {
+    for (let x = 5; x < 15; x++) {
+      const color = (x + y) % 2 === 0 ? gold : green;
+      setPixel(ctx, x, y, color);
+    }
+  }
+
+  // Pole ball
+  setPixel(ctx, 3, 5, gold);
+  setPixel(ctx, 4, 5, gold);
+  setPixel(ctx, 3, 4, white);
+  setPixel(ctx, 4, 4, white);
+
+  scene.textures.addCanvas('finish-flag', canvas);
+}
+
 export function createParticleTexture(scene) {
   const canvas = document.createElement('canvas');
   canvas.width = 4;

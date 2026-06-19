@@ -1,17 +1,20 @@
 import Phaser from 'phaser';
-import { PLAYER_SPEED, PLAYER_JUMP, ICE_COOLDOWN } from '../config.js';
-import IceBall from './IceBall.js';
+import { PLAYER_SPEED, PLAYER_JUMP, ICE_COOLDOWN, SPRITE_SCALE } from '../config.js';
+import IceBall, { ICE_SPEED } from './IceBall.js';
 import AudioManager from '../systems/AudioManager.js';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'henry');
+
+    this.setOrigin(0.5, 1);
+    this.setScale(SPRITE_SCALE.player);
+
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setCollideWorldBounds(false);
-    this.body.setSize(12, 20);
-    this.body.setOffset(2, 4);
+    this.setCollideWorldBounds(true);
+    this.refreshBody();
     this.setDepth(10);
 
     this.facing = 1;
@@ -19,6 +22,18 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.isDead = false;
     this.controls = { left: false, right: false, jump: false, freeze: false };
     this.jumpPressed = false;
+  }
+
+  refreshBody() {
+    const frameW = this.width;
+    const frameH = this.height;
+    const bodyW = Math.round(frameW * 0.55);
+    const bodyH = Math.round(frameH * 0.88);
+    this.body.setSize(bodyW, bodyH);
+    this.body.setOffset(
+      Math.round((frameW - bodyW) / 2),
+      Math.round(frameH - bodyH)
+    );
   }
 
   setControls(controls) {
@@ -59,10 +74,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   shoot() {
     this.canShoot = false;
-    const x = this.x + this.facing * 16;
-    const y = this.y;
+    const x = this.x + this.facing * (this.displayWidth / 2 + 4);
+    const y = this.y - this.displayHeight / 2;
     const ball = new IceBall(this.scene, x, y, this.facing);
     this.scene.iceBalls.add(ball);
+    ball.body.setAllowGravity(false);
+    ball.setVelocity(this.facing * ICE_SPEED, 0);
     AudioManager.get()?.play('sfx-shoot', { volume: 0.35 });
 
     this.scene.time.delayedCall(ICE_COOLDOWN, () => {

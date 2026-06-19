@@ -14,8 +14,15 @@ export default class MenuScene extends Phaser.Scene {
   create() {
     new AudioManager(this);
     const audio = AudioManager.get();
+
     if (!audio.isMuted()) {
       audio.playMusic('music-menu', 0.4);
+    }
+
+    const unlockAudio = () => audio.unlockFromGesture();
+    this.input.once('pointerdown', unlockAudio);
+    if (this.input.keyboard) {
+      this.input.keyboard.once('keydown', unlockAudio);
     }
 
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, PALETTE.sky);
@@ -66,10 +73,14 @@ export default class MenuScene extends Phaser.Scene {
       fontFamily: 'monospace',
       fontSize: '32px',
       color: '#ffffff',
-      backgroundColor: '#4caf50',
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    }).setOrigin(0.5).setDepth(1);
 
+    const playHit = this.add.rectangle(GAME_WIDTH / 2, 260, 180, 56, 0x4caf50)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(0);
+
+    playHit.on('pointerdown', () => this.startGame());
+    playBtn.setInteractive({ useHandCursor: true });
     playBtn.on('pointerdown', () => this.startGame());
 
     bindMenuKeys(this, { confirm: () => this.startGame() });
@@ -84,6 +95,7 @@ export default class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     muteBtn.on('pointerdown', () => {
+      audio.unlockFromGesture();
       const muted = audio.toggleMute();
       muteBtn.setText(muted ? '🔇 UNMUTE' : '🔊 MUTE');
       if (!muted) audio.playMusic('music-menu', 0.4);
@@ -97,9 +109,9 @@ export default class MenuScene extends Phaser.Scene {
   }
 
   startGame() {
-    if (this.starting) return;
-    this.starting = true;
-    AudioManager.get()?.stopMusic();
+    const audio = AudioManager.get();
+    audio?.stopMusic();
+    audio?.unlockFromGesture();
     this.scene.start('GameScene', { levelIndex: 0, score: 0, newGame: true });
   }
 

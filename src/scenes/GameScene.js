@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, PALETTE } from '../config.js';
+import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, PALETTE, platformTopY } from '../config.js';
 import levels from '../levels/index.js';
 import Player from '../entities/Player.js';
 import Animal from '../entities/Animal.js';
+import IceBall from '../entities/IceBall.js';
 import TouchControls from '../ui/TouchControls.js';
 import KeyboardControls, { mergeInput } from '../ui/KeyboardControls.js';
 import HUD from '../ui/HUD.js';
@@ -39,23 +40,25 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.physics.world.setBounds(0, 0, level.length, GAME_HEIGHT);
+    this.physics.world.OVERLAP_BIAS = 24;
 
     this.add.rectangle(level.length / 2, GAME_HEIGHT / 2, level.length, GAME_HEIGHT, PALETTE.sky);
 
     this.platforms = this.physics.add.staticGroup();
     this.movingPlatforms = this.physics.add.group({ allowGravity: false, immovable: true });
     this.buildPlatforms(level);
+    this.placeFinishArea(level);
 
-    this.iceBalls = this.physics.add.group();
+    this.iceBalls = this.physics.add.group({ allowGravity: false });
     this.animalList = [];
-
-    level.animals.forEach((animalConfig) => {
-      const animal = new Animal(this, animalConfig, level.telegraph);
-      this.animalList.push(animal);
-    });
+    this.animalsSpawned = false;
 
     const startPlatform = level.platforms[0];
-    this.player = new Player(this, 80, startPlatform.y * TILE_SIZE - 28);
+    const platformTop = platformTopY(startPlatform.y);
+    this.playerStartX = GAME_WIDTH / 2;
+    this.player = new Player(this, this.playerStartX, platformTop);
+    this.player.body.updateFromGameObject();
+    this.spawnInvincibleUntil = this.time.now + 1000;
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.player, this.movingPlatforms);
 
@@ -63,16 +66,20 @@ export default class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.iceBalls, this.animalList, this.handleIceAnimal, null, this);
 
     this.cameras.main.setBounds(0, 0, level.length, GAME_HEIGHT);
-    this.cameras.main.setScroll(0, 0);
+    this.cameras.main.startFollow(this.player, true, 0.1, 0);
+    this.cameras.main.setDeadzone(120, GAME_HEIGHT);
 
-    this.scrollSpeed = level.scrollSpeed;
+    this.levelEndX = level.length - 120;
 
     this.touchControls = new TouchControls(this);
     this.keyboardControls = new KeyboardControls(this);
     setupKeyboardCapture(this);
     focusGameCanvas(this);
 
-    this.input.on('pointerdown', () => focusGameCanvas(this));
+    this.input.on('pointerdown', () => {
+      AudioManager.get()?.unlockFromGesture();
+      focusGameCanvas(this);
+    });
 
     this.hud = new HUD(this, this.scoreManager, this.highScoreManager);
     this.hud.setLevel(this.levelIndex + 1);
@@ -82,13 +89,15 @@ export default class GameScene extends Phaser.Scene {
       fontSize: '11px',
       color: '#455a64',
     }).setOrigin(0.5).setDepth(100).setScrollFactor(0);
+  }
 
-    this.deathZone = this.add.rectangle(0, GAME_HEIGHT + 20, level.length, 40, 0x000000, 0);
-    this.physics.add.existing(this.deathZone);
-    this.deathZone.body.setAllowGravity(false);
-    this.deathZone.body.setImmovable(true);
-    this.physics.add.overlap(this.player, this.deathZone, () => {
-      if (!this.player.isDead) this.player.die();
+  spawnAnimals() {
+    if (this.animalsSpawned) return;
+    this.animalsSpawned = true;
+
+    this.levelData.animals.forEach((animalConfig) => {
+      const animal = new Animal(this, animalConfig, this.levelData.telegraph);
+      this.animalList.push(animal);
     });
   }
 
@@ -127,8 +136,49 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  handlePlayerAnimal(player, animal) {
+  placeFinishArea(level) {
+    const groundRow = 13;
+    const endTile = Math.floor(level.length / TILE_SIZE);
+    const padStart = Math.max(0, endTile - 4);
+
+    for (let tileX = padStart; tileX < endTile; tileX++) {
+      const x = tileX * TILE_SIZE + TILE_SIZE / 2;
+      const y = groundRow * TILE_SIZE + TILE_SIZE / 2;
+      const tile = this.platforms.create(x, y, 'platform');
+      tile.refreshBody();
+    }
+
+    const flagX = level.length - 56;
+    const flagY = platformTopY(groundRow);
+    const flag = this.add.sprite(flagX, flagY, 'finish-flag')
+      .setOrigin(0.5, 1)
+      .setScale(2.5)
+      .setDepth(6);
+
+    this.tweens.add({
+      targets: flag,
+      angle: { from: -4, to: 4 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    this.add.text(flagX, flagY - flag.displayHeight - 8, 'GOAL', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#ffd54f',
+      stroke: '#5d4037',
+      strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(6);
+  }
+
+  handlePlayerAnimal(obj1, obj2) {
+    const player = obj1 instanceof Player ? obj1 : obj2;
+    const animal = obj1 instanceof Animal ? obj1 : obj2;
+    if (!(player instanceof Player) || !(animal instanceof Animal)) return;
     if (player.isDead || this.deathHandled) return;
+    if (this.time.now < this.spawnInvincibleUntil) return;
 
     if (animal.isFrozen()) {
       animal.explode();
@@ -137,7 +187,10 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  handleIceAnimal(iceBall, animal) {
+  handleIceAnimal(obj1, obj2) {
+    const iceBall = obj1 instanceof IceBall ? obj1 : obj2;
+    const animal = obj1 instanceof Animal ? obj1 : obj2;
+    if (!(iceBall instanceof IceBall) || !(animal instanceof Animal)) return;
     if (!iceBall.active || !animal.active) return;
     animal.freeze();
     iceBall.destroy();
@@ -172,21 +225,20 @@ export default class GameScene extends Phaser.Scene {
     this.player.setControls(controls);
     this.player.update();
 
+    if (!this.animalsSpawned && this.player.x > this.playerStartX + 16) {
+      this.spawnAnimals();
+    }
+
     this.animalList.forEach((animal) => {
       if (animal.active) animal.update();
     });
 
-    const scrollDelta = (this.scrollSpeed * delta) / 1000;
-    this.cameras.main.scrollX += scrollDelta;
-
-    const minX = this.cameras.main.scrollX + 60;
-    if (this.player.x < minX) {
-      this.player.x = minX;
+    if (this.player.x >= this.levelEndX) {
+      this.completeLevel();
     }
 
-    const endX = this.levelData.length - GAME_WIDTH + 100;
-    if (this.cameras.main.scrollX >= endX) {
-      this.completeLevel();
+    if (this.player.y > GAME_HEIGHT + 32 && !this.player.isDead) {
+      this.player.die();
     }
   }
 

@@ -17,6 +17,8 @@ export default class LevelCompleteScene extends Phaser.Scene {
   }
 
   create() {
+    this.transitioning = false;
+
     new AudioManager(this);
     const highScoreManager = new HighScoreManager();
     const newHighScore = highScoreManager.checkAndUpdate(this.score);
@@ -85,5 +87,9 @@ export default class LevelCompleteScene extends Phaser.Scene {
 
   update() {
     pollMenuKeys(this);
+  }
+
+  shutdown() {
+    this.transitioning = false;
   }
 }

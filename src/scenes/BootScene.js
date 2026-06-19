@@ -5,6 +5,7 @@ import {
   createAnimalTextures,
   createIceBallTexture,
   createPlatformTextures,
+  createFinishFlagTexture,
   createParticleTexture,
   createUIButtonTexture,
 } from '../utils/textures.js';
@@ -31,6 +32,7 @@ export default class BootScene extends Phaser.Scene {
     createAnimalTextures(this);
     createIceBallTexture(this);
     createPlatformTextures(this);
+    createFinishFlagTexture(this);
     createParticleTexture(this);
     createUIButtonTexture(this, 'btn-left', PALETTE.uiBg);
     createUIButtonTexture(this, 'btn-right', PALETTE.uiBg);

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE, ANIMAL_CONFIG, PALETTE, FROZEN_DURATION } from '../config.js';
+import { TILE_SIZE, ANIMAL_CONFIG, PALETTE, FROZEN_DURATION, SPRITE_SCALE, platformTopY } from '../config.js';
 import AudioManager from '../systems/AudioManager.js';
 
 const STATE = {
@@ -12,27 +12,31 @@ export default class Animal extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, config, levelTelegraph) {
     const animalConfig = ANIMAL_CONFIG[config.size];
     const x = config.x * TILE_SIZE + TILE_SIZE / 2;
-    const y = config.y * TILE_SIZE;
+    const y = platformTopY(config.y);
     super(scene, x, y, animalConfig.key);
 
     this.setOrigin(0.5, 1);
-    this.setScale(2);
+    this.setScale(SPRITE_SCALE.animal);
+
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
 
     this.size = config.size;
     this.animalConfig = animalConfig;
+    this.baseScale = SPRITE_SCALE.animal;
     this.state = STATE.ACTIVE;
-    this.patrolStart = this.x;
-    this.patrolRange = config.patrolRange || 50;
-    this.patrolDirection = 1;
     this.telegraph = levelTelegraph;
     this.telegraphDone = !levelTelegraph;
 
     this.body.setAllowGravity(false);
     this.body.setImmovable(true);
-    this.body.setSize(animalConfig.width, animalConfig.height);
+    this.setVelocityX(0);
+    const bodyW = animalConfig.width;
+    const bodyH = animalConfig.height;
+    this.body.setSize(bodyW, bodyH);
     this.body.setOffset(
-      (this.displayWidth - animalConfig.width) / 2,
-      this.displayHeight - animalConfig.height
+      (this.width - bodyW) / 2,
+      this.height - bodyH
     );
     this.setDepth(5);
 
@@ -51,25 +55,7 @@ export default class Animal extends Phaser.Physics.Arcade.Sprite {
 
   update() {
     if (this.state === STATE.EXPLODING) return;
-
-    if (this.state === STATE.ACTIVE) {
-      this.patrol();
-    } else if (this.state === STATE.FROZEN) {
-      this.setVelocityX(0);
-    }
-  }
-
-  patrol() {
-    const speed = this.animalConfig.speed * this.patrolDirection;
-    this.setVelocityX(speed);
-
-    if (this.x > this.patrolStart + this.patrolRange) {
-      this.patrolDirection = -1;
-      this.setFlipX(true);
-    } else if (this.x < this.patrolStart - this.patrolRange) {
-      this.patrolDirection = 1;
-      this.setFlipX(false);
-    }
+    this.setVelocityX(0);
   }
 
   freeze() {
@@ -98,8 +84,8 @@ export default class Animal extends Phaser.Physics.Arcade.Sprite {
 
     this.scene.tweens.add({
       targets: this,
-      scaleX: 1.5,
-      scaleY: 1.5,
+      scaleX: this.baseScale * 1.5,
+      scaleY: this.baseScale * 1.5,
       alpha: 0,
       duration: 200,
       onComplete: () => this.destroy(),

@@ -17,6 +17,8 @@ export default class VictoryScene extends Phaser.Scene {
   }
 
   create() {
+    this.transitioning = false;
+
     new AudioManager(this);
     const highScoreManager = new HighScoreManager();
 
@@ -88,5 +90,9 @@ export default class VictoryScene extends Phaser.Scene {
 
   update() {
     pollMenuKeys(this);
+  }
+
+  shutdown() {
+    this.transitioning = false;
   }
 }

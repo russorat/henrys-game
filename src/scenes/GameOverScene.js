@@ -16,6 +16,8 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
   create() {
+    this.transitioning = false;
+
     new AudioManager(this);
     const highScoreManager = new HighScoreManager();
 
@@ -98,5 +100,9 @@ export default class GameOverScene extends Phaser.Scene {
 
   update() {
     pollMenuKeys(this);
+  }
+
+  shutdown() {
+    this.transitioning = false;
   }
 }

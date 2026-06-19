@@ -3,6 +3,11 @@ export const GAME_HEIGHT = 450;
 
 export const TILE_SIZE = 32;
 
+/** Y coordinate of the walkable top edge for a platform tile row. */
+export function platformTopY(tileRow) {
+  return tileRow * TILE_SIZE;
+}
+
 export const PALETTE = {
   sky: 0x87ceeb,
   skyDark: 0x5ba3d9,
@@ -31,6 +36,12 @@ export const ANIMAL_CONFIG = {
   small: { key: 'animal-small', points: 10, speed: 40, width: 16, height: 12 },
   medium: { key: 'animal-medium', points: 25, speed: 60, width: 24, height: 18 },
   large: { key: 'animal-large', points: 50, speed: 30, width: 32, height: 24 },
+};
+
+export const SPRITE_SCALE = {
+  player: 3,
+  animal: 3,
+  iceBall: 2.5,
 };
 
 export const PLAYER_SPEED = 200;
