@@ -3,6 +3,9 @@ export const GAME_HEIGHT = 450;
 
 export const TILE_SIZE = 32;
 
+/** Main ground tile row — kept above on-screen touch controls. */
+export const GROUND_ROW = 10;
+
 /** Y coordinate of the walkable top edge for a platform tile row. */
 export function platformTopY(tileRow) {
   return tileRow * TILE_SIZE;

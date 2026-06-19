@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, PALETTE, platformTopY } from '../config.js';
+import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, PALETTE, platformTopY, GROUND_ROW } from '../config.js';
 import levels from '../levels/index.js';
 import Player from '../entities/Player.js';
 import Animal from '../entities/Animal.js';
@@ -137,7 +137,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   placeFinishArea(level) {
-    const groundRow = 13;
+    const groundRow = GROUND_ROW;
     const endTile = Math.floor(level.length / TILE_SIZE);
     const padStart = Math.max(0, endTile - 4);
 
